@@ -4,6 +4,7 @@ include_once(dirname(__FILE__)."/element/ClassElement.php");
 include_once(dirname(__FILE__)."/element/RangeElement.php");
 include_once(dirname(__FILE__)."/element/FileElement.php");
 include_once(dirname(__FILE__)."/baidu_language_api.php");
+include_once(dirname(__FILE__)."/FileDownLoad.php");
 
 /**
  * 结构体
@@ -183,7 +184,7 @@ class Element{
 	function setValue($value) {
 
 		if (empty($value)){
-			throw new Exception("setValue value is null!");
+			$value = array();
 		}
 		$this->value = $value;
 
@@ -208,7 +209,7 @@ class Element{
 	function setDictionary($value) {
 
 		if (empty($value)){
-			throw new Exception("setDictionary value is null!");
+			$value = array();
 		}
 		$this->dictionary = $value;
 	}
@@ -223,11 +224,11 @@ class Element{
 			throw new Exception("getDictionary value is null!");
 		}
 
-		if($this->dictionary[$value] instanceof RangeElement){
+		if(isset($this->dictionary[$value]) && $this->dictionary[$value] instanceof RangeElement){
 			return $this->dictionary[$value];
-		}else if($this->dictionary[$value] instanceof NoteElement){
+		}else if(isset($this->dictionary[$value]) && $this->dictionary[$value] instanceof NoteElement){
 			return $this->dictionary[$value]->note;
-		}else{
+		}else if(isset($this->dictionary[$value])){
 			return $this->dictionary[$value];
 		}
 	}
@@ -241,7 +242,7 @@ class Element{
 			throw new Exception("getType value is null!");
 		}
 
-		if($this->dictionary[$value] instanceof NoteElement){
+		if(isset($this->dictionary[$value]) && $this->dictionary[$value] instanceof NoteElement){
 			return $this->dictionary[$value]->type;
 		}else{
 			return "";
@@ -257,8 +258,8 @@ class Element{
 			throw new Exception("getFileContents value is null!");
 		}
 
-		if(file_exists($value)){
-			$contents = file_get_contents($value);
+		if(file_exists(dirname(__FILE__).$value)){
+			$contents = file_get_contents(dirname(__FILE__).$value);
 		}else{
 			throw new Exception("getFileContents $value no exists!");
 		}
@@ -292,22 +293,34 @@ class Element{
 	function getHeadUrl() {
 
 
-		$url = $_SERVER['PHP_SELF'];
-		$arr = explode( '/' , $url );
-		$filename= $arr[count($arr)-1];
+		$url = $_SERVER['REQUEST_URI'];
+		$url = str_replace("&parse=".$this->parse,"",$url);
+		$url = str_replace("&amp;parse=".$this->parse,"",$url);
+		$url = str_replace("parse=".$this->parse,"",$url);
 		$data = array("API"=> "API输出数据",
 		self::PARSE_MODE_TXT=> "1.文本文档",
 		self::PARSE_MODE_JAVA=> "2.JAVA依赖请求与解析代码",
 		self::PARSE_MODE_JAVA_NATIVE=> "3.JAVA原生请求与解析代码",
-		self::PARSE_MODE_SWIFT=> "4.Swift1.2请求与解析代码");
-
+		self::PARSE_MODE_SWIFT=> "4.Swift1.2请求与解析代码",
+		self::PARSE_MODE_IOS=> "5.Ios_MJExtension解析代码"
+		);
+		$result = '';
 		foreach ($data as $key => $value) {
-			$document = ($_POST['document']=='')?urldecode($_GET['document']):$_POST['document'];
+			$result_url = $url;
 			if($key != $this->parse){
 				if($key == "API"){
-					$document = "";
+					if(isset($_POST['document'])){
+						$document = $_POST['document'];
+					}else if(isset($_GET['document'])){
+						$document = $_GET['document'];
+					}
+					$result_url = str_replace("&document=$document","",$result_url);
+					$result_url = str_replace("&amp;document=$document","",$result_url);
+					$result_url = str_replace("document=$document","",$result_url);
+				}else{
+					$result_url .= "&amp;parse=$key";
 				}
-				$result .= "<input type=button value=点击查看$value  onclick=\"window.open('../document/$filename?document=$document&amp;parse=$key')\"/>";
+				$result .= "<input type=button value=点击查看$value  onclick=\"window.open('$result_url')\"/>";
 				$result .=self::ECHO_SPLACE;
 			}
 		}
@@ -315,6 +328,42 @@ class Element{
 
 	}
 
+	/**
+	 * 获取保存路径
+	 * */
+	function getSavePath() {
+
+		$cwd = dirname(__FILE__);
+		$rootpath = explode('/',$cwd);
+		$savepath = explode('/',DOCUMENT_SAVE_ROOT_PATH);
+		$cwd = "/";
+		foreach ($rootpath as $key => $value) {
+			foreach ($savepath as $keyItem => $valueItem) {
+				if(!empty($valueItem)&& $valueItem == $value){
+					$cwd .= DOCUMENT_SAVE_ROOT_PATH;
+					$cwd = str_replace("//", "/", $cwd);
+					return $cwd;
+				}
+			}
+			if(!empty($value)){
+				$cwd .= $value."/";
+			}
+		}
+		return getcwd().DOCUMENT_SAVE_ROOT_PATH;
+	}
+	/**
+	 * 获取按钮下载路径
+	 * */
+	function getSaveFileUrl($button, $filename, $http = false) {
+	
+		$path = getPath($filename, $parse = $this->parse, $http);
+		$path = $this->getSavePath().$path;
+		$contents = file_get_contents($path);
+		$contents = base64_encode($contents);
+		$result = "<input type=button value=$button$filename  onclick=\"download_file_content('$filename','$contents')\"/>";
+		$this->setFileList($result);
+		return $result;
+	}
 
 }
 ?>

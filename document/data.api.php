@@ -1,6 +1,5 @@
 <?php
-
-$DOCUMENT_KEY = "truxish2114558de";
+include_once(dirname(__FILE__)."/../document_sdk/Config.php");
 
 
 /**
@@ -8,17 +7,35 @@ $DOCUMENT_KEY = "truxish2114558de";
  */
 function document($value,$api)
 {
-
-	global $DOCUMENT_KEY;
-
 	if(!is_array($value)){
 		return;
 	}
 
-	$document = ($_POST['document']=='')?urldecode($_GET['document']):$_POST['document'];
-	if($document == $DOCUMENT_KEY){
-		$parse = ($_POST['parse']=='')?urldecode($_GET['parse']):$_POST['parse'];
-		$azauto = ($_POST['azauto']=='')?urldecode($_GET['azauto']):$_POST['azauto'];
+	if(isset($_POST['document'])){
+		$document = $_POST['document'];
+	}else if(isset($_GET['document'])){
+		$document = $_GET['document'];
+	}else{
+		$document = "";
+	}
+
+	if($document == DOCUMENT_KEY){
+
+		if(isset($_POST['parse'])){
+			$parse = $_POST['parse'];
+		}else if(isset($_GET['parse'])){
+			$parse = $_GET['parse'];
+		}else{
+			$parse = "";
+		}
+
+		if(isset($_POST['azauto'])){
+			$azauto = $_POST['azauto'];
+		}else if(isset($_GET['azauto'])){
+			$azauto = $_GET['azauto'];
+		}else{
+			$azauto = "";
+		}
 		if(empty($parse)){
 			$parse = "txt";
 		}
@@ -37,7 +54,11 @@ function document($value,$api)
 				}else{
 					$az = "字段自动英汉翻译【已开启】，关闭请删除请求参数【azauto】<br />";
 				}
-				echo iconv("UTF-8", "GBK",$az);
+				if($_SERVER['REQUEST_METHOD'] == 'POST'){
+					echo iconv($az);
+				}else{
+					echo iconv("UTF-8", "GBK",$az);
+				}
 
 				if($elment instanceof NoteClass && $elment instanceof HttpParamsListener){
 					$elment->document_http($elment,$value,$parse);

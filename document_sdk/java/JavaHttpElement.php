@@ -12,29 +12,29 @@ class JavaHttpElement extends DataHttpElement implements JavaHttpListener{
 	// JAVA http映射表
 	public $JAVA_HTTP_KEY = array(
 	/**字符串*/
-	Element::TYPE_KEY_STRING                => '../document_sdk/javapan/http/string.java',
+	Element::TYPE_KEY_STRING                => '/javapan/http/string.java',
 	/**4位整型*/
-	Element::TYPE_KEY_INT        	        => "../document_sdk/javapan/http/int.java",
+	Element::TYPE_KEY_INT        	        => "/javapan/http/int.java",
 	/**长整形*/
-	Element::TYPE_KEY_LONG                  => "../document_sdk/javapan/http/long.java",
+	Element::TYPE_KEY_LONG                  => "/javapan/http/long.java",
 	/**浮点数*/
-	Element::TYPE_KEY_FLOAT                 => "../document_sdk/javapan/http/float.java",
+	Element::TYPE_KEY_FLOAT                 => "/javapan/http/float.java",
 	/**布尔型*/
-	Element::TYPE_KEY_BOOLEAN               => "../document_sdk/javapan/http/boolean.java",
+	Element::TYPE_KEY_BOOLEAN               => "/javapan/http/boolean.java",
 	/**文件参数*/
-	DataHttpElement::HTTP_KEY_FILE          => "../document_sdk/javapan/http/file.java",
+	DataHttpElement::HTTP_KEY_FILE          => "/javapan/http/file.java",
 	/**文件路径设置*/
-	DataHttpElement::HTTP_KEY_FILE_PATH     => "../document_sdk/javapan/http/filepath.java",
+	DataHttpElement::HTTP_KEY_FILE_PATH     => "/javapan/http/filepath.java",
 	/**结果解析*/
-	DataHttpElement::HTTP_KEY_OBJECT        => "../document_sdk/javapan/http/object.java",
+	DataHttpElement::HTTP_KEY_OBJECT        => "/javapan/http/object.java",
 	/**结果数组解析*/
-	DataHttpElement::HTTP_KEY_OBJECT_LIST   => "../document_sdk/javapan/http/object_list.java",
+	DataHttpElement::HTTP_KEY_OBJECT_LIST   => "/javapan/http/object_list.java",
 	/**对象*/
-	DataHttpElement::HTTP_KEY_RESULT        => "../document_sdk/javapan/http/result.java",
+	DataHttpElement::HTTP_KEY_RESULT        => "/javapan/http/result.java",
 	/**对象数组*/
-	DataHttpElement::HTTP_KEY_RESULT_LIST   => "../document_sdk/javapan/http/result_list.java",
+	DataHttpElement::HTTP_KEY_RESULT_LIST   => "/javapan/http/result_list.java",
 	/**整体*/
-	DataHttpElement::HTTP_KEY_HTTP          => "../document_sdk/javapan/http/http.java",
+	DataHttpElement::HTTP_KEY_HTTP          => "/javapan/http/http.java",
 	/**头部引用*/
 	Element::TYPE_KEY_HEAD     	  	        => JAVA_HEAD
 	/**待扩展*/
@@ -74,15 +74,15 @@ class JavaHttpElement extends DataHttpElement implements JavaHttpListener{
 	// JAVA静态范围表
 	public $JAVA_STATIC_FINAL_KEY = array(
 	/**字符串*/
-	Element::TYPE_KEY_STRING           => "../document_sdk/javapan/static/string.java",
+	Element::TYPE_KEY_STRING           => "/javapan/static/string.java",
 	/**4位整型*/
-	Element::TYPE_KEY_INT        	   => "../document_sdk/javapan/static/int.java",
+	Element::TYPE_KEY_INT        	   => "/javapan/static/int.java",
 	/**长整形*/
-	Element::TYPE_KEY_LONG             => "../document_sdk/javapan/static/long.java",
+	Element::TYPE_KEY_LONG             => "/javapan/static/long.java",
 	/**浮点数*/
-	Element::TYPE_KEY_FLOAT            => "../document_sdk/javapan/static/float.java",
+	Element::TYPE_KEY_FLOAT            => "/javapan/static/float.java",
 	/**布尔型*/
-	Element::TYPE_KEY_BOOLEAN          => "../document_sdk/javapan/static/boolean.java",
+	Element::TYPE_KEY_BOOLEAN          => "/javapan/static/boolean.java",
 	/**待扩展*/
 	);
 
@@ -101,7 +101,7 @@ class JavaHttpElement extends DataHttpElement implements JavaHttpListener{
 	#@Overrides
 	function autoType() {
 
-		if (empty($this->value)){
+		if (!isset($this->value) || $this->value == ""){
 			throw new Exception("getAutoType value is null!");
 		}
 
@@ -173,8 +173,10 @@ class JavaHttpElement extends DataHttpElement implements JavaHttpListener{
 		$http = $HttpKey[$key];
 		$http = parent::getFileContents($http);
 		$http = str_replace(Element::FORMAT_DATA_KEY, $value, $http);
-		$result = str_replace(Element::FORMAT_NOTE, $note, $http);
-
+		$result = $http;
+		if(isset($note)){
+			$result = str_replace(Element::FORMAT_NOTE, $note, $result);
+		}
 		$static = $this->formatStatic($key);
 		if(!empty($static)){
 			$result = $static.$result;
@@ -242,7 +244,7 @@ class JavaHttpElement extends DataHttpElement implements JavaHttpListener{
 
 	#@Overrides
 	function httpHttp() {
-
+		$object = "";
 		if($this->isListMode === false){
 			$result = $this->httpResult();
 			if($this->element->gson === false){
@@ -258,22 +260,20 @@ class JavaHttpElement extends DataHttpElement implements JavaHttpListener{
 
 		$HttpKey = $this->getHttpKey();
 		$note = parent::getNoteFormat();
-		if (!is_array($this->value)){
-			throw new Exception("httpHttp is_array error!");
-		}
 		$http = $HttpKey[DataHttpElement::HTTP_KEY_HTTP];
 		$http = parent::getFileContents($http);
 
 		$http = str_replace(Element::FORMAT_CLASS, $this->name, $http);
 		$data = "";
 		$params = "";
-
-		foreach ($this->value as $key => $value) {
-			$element = $this->getElement();
-			$element->initElement($key,$value,$this->getNoteElement($key));
-			$data = $data.$element->http();
-			if($element->type != DataHttpElement::HTTP_KEY_FILE){
-				$params .= " + \"&$key=\" + m".ucfirst($element->name);
+		if (is_array($this->value)){
+			foreach ($this->value as $key => $value) {
+				$element = $this->getElement();
+				$element->initElement($key,$value,$this->getNoteElement($key));
+				$data = $data.$element->http();
+				if($element->type != DataHttpElement::HTTP_KEY_FILE){
+					$params .= " + \"&$key=\" + m".ucfirst($element->name);
+				}
 			}
 		}
 		$data .= $result.$object;

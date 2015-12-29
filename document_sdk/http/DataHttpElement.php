@@ -175,6 +175,10 @@ abstract class DataHttpElement extends Element implements DataHttpListener{
 			$element = new JavaNativeHttpElement();
 		}else if($this->parse == Element::PARSE_MODE_TXT){
 			$element = new TxtHttpElement();
+		}else if($this->parse == Element::PARSE_MODE_SWIFT){
+			$element = new SwiftHttpElement();
+		}else if($this->parse == Element::PARSE_MODE_IOS){
+				
 		}else{
 
 		}
@@ -252,21 +256,25 @@ abstract class DataHttpElement extends Element implements DataHttpListener{
 		$value = str_replace(Element::ECHO_ENTER,"",$value);
 		$value = str_replace(Element::ECHO_SPLACE,"",$value);
 
+		$cwd = $this->getSavePath();
+
 		if($this->parse == Element::PARSE_MODE_JAVA){
-			$path = getcwd().JAVA_HTTP_DATA_SAVE_PATH;
+			$path = $cwd.JAVA_HTTP_DATA_SAVE_PATH;
 		}else if($this->parse == Element::PARSE_MODE_JAVA_NATIVE){
-			$path = getcwd().JAVA_NATIVE_HTTP_DATA_SAVE_PATH;
+			$path = $cwd.JAVA_NATIVE_HTTP_DATA_SAVE_PATH;
 		}else if($this->parse == Element::PARSE_MODE_TXT){
-			$path = getcwd().TXT_HTTP_DATA_SAVE_PATH;
+			$path = $cwd.TXT_HTTP_DATA_SAVE_PATH;
+		}else if($this->parse == Element::PARSE_MODE_SWIFT){
+			$path = $cwd.SWIFT_HTTP_DATA_SAVE_PATH;
+		}else if($this->parse == Element::PARSE_MODE_IOS){
+			$path = $cwd.IOS_HTTP_DATA_SAVE_PATH;
 		}else{
 
 		}
-		
+
 		@mkdir($path, 0777, true);
 		file_put_contents($path.$filename, $value);
-		$result = "<input type=button value=↓下载请求类↓$filename  onclick=\"window.open('../document_sdk/FileDownLoad.php?filename=$filename&amp;http=true&amp;parse=".$this->parse."')\"/>";
-		$this->setFileList($result);
-		return $result;
+		return 	$this->getSaveFileUrl('↓下载请求类↓', $filename, true);
 
 	}
 
@@ -277,7 +285,7 @@ abstract class DataHttpElement extends Element implements DataHttpListener{
 	function http() {
 
 
-		if (empty($this->value)){
+		if (!isset($this->value) || $this->value == ""){
 			$this->value = " ";
 		}
 

@@ -12,25 +12,25 @@ class JavaNativeElement extends JavaElement{
 	// JAVA解析映射表
 	public $JAVA_NATIVE_PARSE_KEY = array(
 	/**字符串*/
-	Element::TYPE_KEY_STRING           => "../document_sdk/javanativepan/parse/string.java",
+	Element::TYPE_KEY_STRING           => "/javanativepan/parse/string.java",
 	/**4位整型*/
-	Element::TYPE_KEY_INT        	   => "../document_sdk/javanativepan/parse/int.java",
+	Element::TYPE_KEY_INT        	   => "/javanativepan/parse/int.java",
 	/**长整形*/
-	Element::TYPE_KEY_LONG             => "../document_sdk/javanativepan/parse/long.java",
+	Element::TYPE_KEY_LONG             => "/javanativepan/parse/long.java",
 	/**浮点数*/
-	Element::TYPE_KEY_FLOAT            => "../document_sdk/javanativepan/parse/float.java",
+	Element::TYPE_KEY_FLOAT            => "/javanativepan/parse/float.java",
 	/**布尔型*/
-	Element::TYPE_KEY_BOOLEAN          => "../document_sdk/javanativepan/parse/boolean.java",
+	Element::TYPE_KEY_BOOLEAN          => "/javanativepan/parse/boolean.java",
 	/**数组队列*/
-	Element::TYPE_KEY_ARRAY            => "../document_sdk/javanativepan/parse/array.java",
+	Element::TYPE_KEY_ARRAY            => "/javanativepan/parse/array.java",
 	/**自定义类数组队列*/
-	Element::TYPE_KEY_ARRAY_CLASS      => "../document_sdk/javanativepan/parse/array_class.java",
+	Element::TYPE_KEY_ARRAY_CLASS      => "/javanativepan/parse/array_class.java",
 	/**自定义类*/
-	Element::TYPE_KEY_CLASS_CHILD      => "../document_sdk/javanativepan/parse/class_child.java",
+	Element::TYPE_KEY_CLASS_CHILD      => "/javanativepan/parse/class_child.java",
 	/**内部类函数*/
-	Element::TYPE_KEY_CLASS_NESTED     => "../document_sdk/javanativepan/parse/class_nested.java",
+	Element::TYPE_KEY_CLASS_NESTED     => "/javanativepan/parse/class_nested.java",
 	/**类*/
-	Element::TYPE_KEY_CLASS     	   => "../document_sdk/javanativepan/parse/class.java"
+	Element::TYPE_KEY_CLASS     	   => "/javanativepan/parse/class.java"
 	/**待扩展*/
 	);
 
@@ -47,15 +47,15 @@ class JavaNativeElement extends JavaElement{
 		foreach ($dictionary as $itemkey => $value) {
 
 			if(($value instanceof ClassElement) && $value->isShare){
-				if(empty($key)){
-					$key = $itemkey;
-				}else{
-					$key .= "；".$itemkey;
+				if(!empty($key)){
+					$itemkey = $key ."；".$itemkey;
 				}
-				$arr = explode("；",$key);
+				$arr = explode("；",$itemkey);
 				$data = $this->value;
 				foreach($arr as $u){
-					$data = $data[$u];
+					if(isset($data[$u])){
+						$data = $data[$u];
+					}
 				}
 				$class = $value->name;
 				if(class_exists($class)){
@@ -72,12 +72,10 @@ class JavaNativeElement extends JavaElement{
 				}
 
 			}else if(is_array($value)){
-				if(empty($key)){
-					$key = $itemkey;
-				}else{
-					$key .= "；".$itemkey;
+				if(!empty($key)){
+					$itemkey = $key ."；".$itemkey;
 				}
-				$result .= $this->formatGeneralClass($value,$key);
+				$result .= $this->formatGeneralClass($value,$itemkey);
 			}
 		}
 

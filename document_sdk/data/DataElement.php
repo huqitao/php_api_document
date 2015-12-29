@@ -160,6 +160,8 @@ abstract class DataElement extends Element implements DataFormatListener,DataPar
 			$element = new TxtElement();
 		}else if($this->parse == Element::PARSE_MODE_SWIFT){
 			$element = new SwiftElement();
+		}else if($this->parse == Element::PARSE_MODE_IOS){
+			$element = new IosElement();
 		}else{
 			$element = new IosElement();
 		}
@@ -176,7 +178,7 @@ abstract class DataElement extends Element implements DataFormatListener,DataPar
 			throw new Exception("getName value is null!");
 		}
 
-		if(is_array($this->dictionary) && $this->dictionary[$value] instanceof ClassElement){
+		if(is_array($this->dictionary) && isset($this->dictionary[$value]) && $this->dictionary[$value] instanceof ClassElement){
 			$name = $this->dictionary[$value]->name;
 			if(!empty($name)){
 				return $name;
@@ -195,7 +197,7 @@ abstract class DataElement extends Element implements DataFormatListener,DataPar
 			throw new Exception("getShareMode value is null!");
 		}
 
-		if(is_array($this->dictionary) && $this->dictionary[$value] instanceof ClassElement){
+		if(is_array($this->dictionary) && isset($this->dictionary[$value]) && $this->dictionary[$value] instanceof ClassElement){
 			$isShare = $this->dictionary[$value]->isShare;
 			return $isShare;
 		}
@@ -212,8 +214,10 @@ abstract class DataElement extends Element implements DataFormatListener,DataPar
 		if (empty($value)){
 			throw new Exception("getClassElement value is null!");
 		}
-		if($this->dictionary[$value] instanceof ClassElement){
+		if(is_array($this->dictionary) && isset($this->dictionary[$value]) && $this->dictionary[$value] instanceof ClassElement){
 			return $this->dictionary[$value];
+		}else if(isset($this->dictionary) && $this->dictionary instanceof ClassElement){
+			return $this->dictionary;
 		}else{
 			$element = new ClassElement($this->getName($value),$this->getDictionary($value),$this->getShareMode($value),$this->getType($value));
 			return $element;
@@ -331,22 +335,24 @@ abstract class DataElement extends Element implements DataFormatListener,DataPar
 		$value = str_replace(Element::ECHO_ENTER,"",$value);
 		$value = str_replace(Element::ECHO_SPLACE,"",$value);
 
+		$cwd = $this->getSavePath();
+
 		if($this->parse == Element::PARSE_MODE_JAVA){
-			$path = getcwd().JAVA_DATA_SAVE_PATH;
+			$path = $cwd.JAVA_DATA_SAVE_PATH;
 		}else if($this->parse == Element::PARSE_MODE_JAVA_NATIVE){
-			$path = getcwd().JAVA_NATIVE_DATA_SAVE_PATH;
+			$path = $cwd.JAVA_NATIVE_DATA_SAVE_PATH;
 		}else if($this->parse == Element::PARSE_MODE_TXT){
-			$path = getcwd().TXT_DATA_SAVE_PATH;
+			$path = $cwd.TXT_DATA_SAVE_PATH;
 		}else if($this->parse == Element::PARSE_MODE_SWIFT){
-			$path = getcwd().SWIFT_DATA_SAVE_PATH;
+			$path = $cwd.SWIFT_DATA_SAVE_PATH;
+		}else if($this->parse == Element::PARSE_MODE_IOS){
+			$path = $cwd.IOS_DATA_SAVE_PATH;
 		}else{
 
 		}
 		@mkdir($path, 0777, true);
 		file_put_contents($path.$filename, $value);
-		$result = "<input type=button value=↓下载数据类↓$filename  onclick=\"window.open('../document_sdk/FileDownLoad.php?filename=$filename&amp;parse=".$this->parse."')\"/>";
-		$this->setFileList($result);
-		return $result;
+		return 	$this->getSaveFileUrl('↓下载数据类↓', $filename);
 
 	}
 
@@ -357,8 +363,7 @@ abstract class DataElement extends Element implements DataFormatListener,DataPar
 	 * */
 	function format() {
 
-
-		if (empty($this->value)){
+		if (!isset($this->value) || $this->value == ""){
 			throw new Exception("format value is null!");
 		}
 
@@ -393,7 +398,7 @@ abstract class DataElement extends Element implements DataFormatListener,DataPar
 	 * */
 	function parse() {
 
-		if (empty($this->value)){
+		if (!isset($this->value) || $this->value == ""){
 			throw new Exception("parse value is null!");
 		}
 

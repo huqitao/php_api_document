@@ -4,6 +4,7 @@ include_once(dirname(__FILE__)."/javanative/JavaNativeElement.php");
 include_once(dirname(__FILE__)."/ios/IosElement.php");
 include_once(dirname(__FILE__)."/txt/TxtElement.php");
 include_once(dirname(__FILE__)."/swift/SwiftElement.php");
+include_once(dirname(__FILE__)."/swift/SwiftHttpElement.php");
 include_once(dirname(__FILE__)."/java/JavaHttpElement.php");
 include_once(dirname(__FILE__)."/javanative/JavaNativeHttpElement.php");
 include_once(dirname(__FILE__)."/txt/TxtHttpElement.php");
@@ -117,8 +118,20 @@ abstract class NoteClass{
 		if(!empty($value)){
 			$element->setValue($value);
 		}
+
 		$dictionary = $this->getDictionary();
-		$element->setDictionary($dictionary[$note]);
+		$data = $dictionary[$note];
+		$element->setDictionary($data);
+
+		if(isset($data) && !is_array($data) && ($data instanceof ClassElement)){
+			//输出数据全为共享数据体
+			$value = array();
+			$value['data'] = $element->value;
+			$dictionary = array();
+			$dictionary['data'] = $data;
+			$element->setValue($value);
+			$element->setDictionary($dictionary);
+		}
 
 		return $element;
 
@@ -136,6 +149,13 @@ abstract class NoteClass{
 			if(!empty($data)){
 				$value = $data;
 			}
+
+			if(is_array($value)){
+				if (array_key_exists(0,$value)){
+					$value = $value[0];
+				}
+			}
+
 			if($parse == Element::PARSE_MODE_JAVA){
 				return $element->getJavaElement($value);
 			}else if($parse == Element::PARSE_MODE_TXT){
@@ -144,6 +164,8 @@ abstract class NoteClass{
 				return $element->getSwiftElement($value);
 			}else if($parse == Element::PARSE_MODE_JAVA_NATIVE){
 				return $element->getJavaNativeElement($value);
+			}else if($parse == Element::PARSE_MODE_IOS){
+				return $element->getIosElement($value);
 			}else{
 				return $element->getIosElement($value);
 			}
@@ -159,12 +181,6 @@ abstract class NoteClass{
 	 * */
 	function document_format($value, $parse = Element::PARSE_MODE_JAVA){
 
-		if(is_array($value)){
-			if (array_key_exists(0,$value)){
-				$value = $value[0];
-			}
-		}
-
 		if($parse == Element::PARSE_MODE_JAVA){
 			$data = new JavaElement();
 		}else if($parse == Element::PARSE_MODE_JAVA_NATIVE){
@@ -173,6 +189,8 @@ abstract class NoteClass{
 			$data = new TxtElement();
 		}else if($parse == Element::PARSE_MODE_SWIFT){
 			$data = new SwiftElement();
+		}else if($parse == Element::PARSE_MODE_IOS){
+			$data = new IosElement();
 		}else{
 			$data = new IosElement();
 		}
@@ -195,7 +213,14 @@ abstract class NoteClass{
 		}
 		$this->result .= $general;
 		$this->result =$data->getHeadUrl().$this->getFileList().$this->result;
-		echo iconv("UTF-8", "GBK", $this->result);
+
+		$js = $data->getFileContents('/js/download.js');
+		$base64js = $data->getFileContents('/js/jbase64.js');
+		if($_SERVER['REQUEST_METHOD'] == 'POST'){
+			echo $base64js.$js.$this->result;
+		}else{
+			echo iconv("UTF-8", "GBK", $base64js.$js.$this->result);
+		}
 
 	}
 
@@ -207,6 +232,9 @@ abstract class NoteClass{
 		$name = $this->getName();
 		$basename = $this->getName();
 		$name = str_replace("Data", "Http", $name);
+		if(strpos($name, "Http") === false){
+			$name .= "Http";
+		}
 		$note = $this->getNote();
 		if($parse == Element::PARSE_MODE_JAVA){
 			$data = new JavaHttpElement();
@@ -215,6 +243,8 @@ abstract class NoteClass{
 		}else if($parse == Element::PARSE_MODE_TXT){
 			$data = new TxtHttpElement();
 		}else if($parse == Element::PARSE_MODE_SWIFT){
+			$data = new SwiftHttpElement();
+		}else if($parse == Element::PARSE_MODE_IOS){
 			return "";
 		}else{
 
@@ -249,8 +279,10 @@ abstract class NoteClass{
 	 * */
 	function getVerison(){
 		$name = $this->getName();
-		$version=filemtime("../document/Class.$name.php");
-		date_default_timezone_set(PRC);
+		$cwd = dirname(__FILE__);
+		$cwd = str_replace("document_sdk", "document", $cwd);
+		$version = filemtime($cwd . "/Class.$name.php");
+		date_default_timezone_set("Asia/Shanghai");
 		$version = date("Ymd.H.i",$version);
 		return $version;
 	}
